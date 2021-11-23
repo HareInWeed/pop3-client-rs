@@ -3,36 +3,84 @@
   windows_subsystem = "windows"
 )]
 
-use tauri::async_runtime::RwLock;
+mod email;
+mod pop3;
 
-struct Counter {
-  count: i32,
+use tauri::async_runtime::Mutex;
+
+mod msg_command {
+  use crate::pop3::Msg;
+
+  #[tauri::command]
+  pub fn user_msg(name: &str) -> Result<String, String> {
+    let mut msg = Msg::default();
+    match msg.user(name) {
+      Ok(_) => Ok(msg.into_string()),
+      Err(error) => Err(error.to_string()),
+    }
+  }
+
+  #[tauri::command]
+  pub fn pass_msg(pass: &str) -> Result<String, String> {
+    let mut msg = Msg::default();
+    match msg.pass(pass) {
+      Ok(_) => Ok(msg.into_string()),
+      Err(error) => Err(error.to_string()),
+    }
+  }
+
+  #[tauri::command]
+  pub fn stat_msg() -> Result<String, String> {
+    let mut msg = Msg::default();
+    match msg.stat() {
+      Ok(_) => Ok(msg.into_string()),
+      Err(error) => Err(error.to_string()),
+    }
+  }
+
+  #[tauri::command]
+  pub fn list_msg(id: Option<u64>) -> Result<String, String> {
+    let mut msg = Msg::default();
+    match msg.list(id) {
+      Ok(_) => Ok(msg.into_string()),
+      Err(error) => Err(error.to_string()),
+    }
+  }
+
+  #[tauri::command]
+  pub fn retr_msg(id: u64) -> Result<String, String> {
+    let mut msg = Msg::default();
+    match msg.retr(id) {
+      Ok(_) => Ok(msg.into_string()),
+      Err(error) => Err(error.to_string()),
+    }
+  }
+
+  #[tauri::command]
+  pub fn quit_msg() -> Result<String, String> {
+    let mut msg = Msg::default();
+    match msg.quit() {
+      Ok(_) => Ok(msg.into_string()),
+      Err(error) => Err(error.to_string()),
+    }
+  }
 }
 
-#[tauri::command]
-async fn increase(state: tauri::State<'_, RwLock<Counter>>) -> Result<(), String> {
-  let mut state = state.write().await;
-  state.count += 1;
-  Ok(())
-}
-
-#[tauri::command]
-async fn decrease(state: tauri::State<'_, RwLock<Counter>>) -> Result<(), String> {
-  let mut state = state.write().await;
-  state.count -= 1;
-  Ok(())
-}
-
-#[tauri::command]
-async fn get_counter(state: tauri::State<'_, RwLock<Counter>>) -> Result<i32, String> {
-  let state = state.read().await;
-  Ok(state.count)
+struct State {
+  connection: Option<pop3::Pop3>,
 }
 
 fn main() {
   tauri::Builder::default()
-    .manage(RwLock::new(Counter { count: 0 }))
-    .invoke_handler(tauri::generate_handler![increase, decrease, get_counter])
+    .manage(Mutex::new(State { connection: None }))
+    .invoke_handler(tauri::generate_handler![
+      msg_command::user_msg,
+      msg_command::pass_msg,
+      msg_command::stat_msg,
+      msg_command::list_msg,
+      msg_command::retr_msg,
+      msg_command::quit_msg,
+    ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
