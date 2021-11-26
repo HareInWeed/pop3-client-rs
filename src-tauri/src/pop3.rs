@@ -29,7 +29,7 @@ mod pop3_parser {
     };
   }
 
-  pub fn is_ok(msg: &[u8]) -> IResult<&[u8], bool> {
+  fn is_ok(msg: &[u8]) -> IResult<&[u8], bool> {
     let (msg, ok) = alt((value(true, tag("+OK")), value(false, tag("-ERR"))))(msg)?;
     Ok((msg, ok))
   }
@@ -562,7 +562,7 @@ impl Pop3 {
     let mut buf = Vec::<u8>::new();
     while !(buf.len() >= 2 && &buf[buf.len() - 2..] == &b"\r\n"[..]) {
       if self.socket.read_until(b'\n', &mut buf).await? == 0 {
-        break;
+        return Err(anyhow! {"connection closed by remote"});
       }
     }
     Ok(buf)
@@ -572,7 +572,7 @@ impl Pop3 {
     let mut buf = Vec::<u8>::new();
     loop {
       if self.socket.read_until(b'\n', &mut buf).await? == 0 {
-        return Ok(buf);
+        return Err(anyhow! {"connection closed by remote"});
       }
       let len = buf.len();
       if len > 5 && &buf[len - 5..] == &b"\r\n.\r\n"[..] {
@@ -634,7 +634,7 @@ impl Pop3 {
 async fn test_pop3() -> Result<()> {
   use std::env::var;
 
-  let (mut pop3, welcome_msg) = Pop3::new(&var("POP3_ADDR").unwrap(), true).await?;
+  let (mut pop3, welcome_msg) = Pop3::new(&var("POP3_ADDR").unwrap(), false).await?;
   println!("{}", welcome_msg);
   pop3.user(&var("POP3_USER").unwrap()).await?;
   pop3.pass(&var("POP3_PASS").unwrap()).await?;
