@@ -1,15 +1,8 @@
-import {
-  FC,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
-
-import throttle from "lodash/fp/throttle";
+import { FC, useEffect, useState } from "react";
 
 import { invoke } from "@tauri-apps/api";
+
+import DOMPurify from "dompurify";
 
 import ConsoleState from "states/ConsoleState";
 import LoginState from "states/LoginState";
@@ -38,6 +31,21 @@ import Article from "@mui/icons-material/Article";
 import EmailOutlined from "@mui/icons-material/EmailOutlined";
 import Logout from "@mui/icons-material/Logout";
 import Refresh from "@mui/icons-material/Refresh";
+
+// Add a hook to make all links open a new window
+DOMPurify.addHook("afterSanitizeAttributes", function (node) {
+  // set all elements owning target to target=_blank
+  if ("target" in node) {
+    node.setAttribute("target", "_blank");
+  }
+  // set non-HTML/MathML links to xlink:show=new
+  if (
+    !node.hasAttribute("target") &&
+    (node.hasAttribute("xlink:href") || node.hasAttribute("href"))
+  ) {
+    node.setAttribute("xlink:show", "new");
+  }
+});
 
 interface MailInfo {
   index: number;
@@ -164,7 +172,17 @@ const MailCard: FC<MailCardProps> = ({ mail }) => {
             key={`html-${idx}`}
             sx={{ flexGrow: 1, overflowX: "auto" }}
           >
-            <div dangerouslySetInnerHTML={{ __html: html }}></div>
+            <div
+              dangerouslySetInnerHTML={{
+                __html: DOMPurify.sanitize(html, {
+                  USE_PROFILES: {
+                    html: true,
+                    svg: true,
+                    mathMl: true,
+                  },
+                }),
+              }}
+            />
           </TabPanel>
         ))}
         {texts.map((text, idx) => (

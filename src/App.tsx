@@ -43,7 +43,7 @@ const App: FC = () => {
 
 const AppDisplay: FC = () => {
   const { login } = LoginState.useContainer();
-  const { msg, severity, open, close, showMessage } = SnackState.useContainer();
+  const { msg, severity, open, close } = SnackState.useContainer();
   const { consoleMsgs } = ConsoleState.useContainer();
 
   return (
