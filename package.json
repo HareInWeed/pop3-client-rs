@@ -1,6 +1,6 @@
 {
   "name": "pop3-client-rs",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A POP3/POP3S client built with tauri",
   "license": "MIT",
   "author": {
